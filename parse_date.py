@@ -48,7 +48,7 @@ def parse_date(nlu: Nlu):
             month = value.get('month', None)
             year = value.get('year', None)
             if year is None:
-                    year = today.year
+                year = today.year
             print('\n','day: ','\t',day,)
             print('\n','month: ','\t',month)
             print('\n','year: ','\t',year)
