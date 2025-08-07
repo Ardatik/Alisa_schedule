@@ -167,9 +167,13 @@ async def handler(request_data: AliceRequest):
                         choices += "\nУкажите номер нужного преподавателя."
                         response['response']['text'] = choices
                     session_state = request.get('state', {}).get('session', {})
-                    session_state['teacher_candidates'] = result
-                    session_state['awaiting_teacher_choice'] = True
-                    response['session_state'] = session_state
+                    if isinstance(result, list):
+                        session_state['teacher_candidates'] = result
+                        session_state['awaiting_teacher_choice'] = True
+                        response['session_state'] = session_state
+                    else:
+                        response['session_state'] = {}
+                    response['session_state'] = result
                 else:
                     teacher_id = result
                     target_date = parse_date(nlu)
