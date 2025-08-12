@@ -52,7 +52,7 @@ def process_data_to_text_for_cabinets(data, schedule_type = 'cabinet'): #, targe
 async def out_readable_text(data, target_date, schedule_type):
     if schedule_type == "cabinet":
         return process_data_to_text_for_cabinets(data, target_date)
-    elif schedule_type == "cabinet":
+    elif schedule_type == "teacher":
         return process_data_to_text_for_teachers(data, target_date)       
     else:
         pass

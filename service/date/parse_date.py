@@ -1,10 +1,7 @@
 from datetime import datetime, date, timedelta
 from zoneinfo import ZoneInfo
-from schemas.Alice_Request import AliceRequest
 import pymorphy3
 from schemas.Alice_Request import Nlu
-from datetime import datetime, date
-from zoneinfo import ZoneInfo
 from dateutil.relativedelta import relativedelta
 
 morph = pymorphy3.MorphAnalyzer()
