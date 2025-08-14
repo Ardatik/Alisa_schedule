@@ -1,9 +1,9 @@
 import httpx
 
-def request(api_url):
-    with httpx.Client() as client:
+async def request(api_url):
+    async with httpx.AsyncClient() as client:
         try:
-            request = client.get(api_url)
+            request = await client.get(api_url)
             request.raise_for_status()
             data = request.json()
             return data
