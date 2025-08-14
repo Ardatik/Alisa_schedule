@@ -45,7 +45,7 @@ def process_data_to_text_for_cabinets(data, schedule_type = 'cabinet'): #, targe
         )
         schedule_list.append(text)
     if len(schedule_list) > 0:
-        return ' '.join(schedule_list)
+        return '\n'.join(schedule_list)
     else:
         return "На эту дату занятий не найдено"
     

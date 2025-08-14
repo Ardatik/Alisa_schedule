@@ -56,12 +56,12 @@ def match_teacher(teacher, fio_data):
     return None
 
 
-def get_teachers_from_api(search_param):
+async def get_teachers_from_api(search_param):
     try:
         env_var = os.getenv("GET_TEACHERS")
         request_url = env_var + search_param
         print(f"Запрос: {request_url}")
-        data = request(request_url)
+        data = await request(request_url)
         print(f"Данные от API: {data}")
         return data.get("teachers", [])
     except Exception as e:
@@ -69,7 +69,7 @@ def get_teachers_from_api(search_param):
         return []
 
 
-def get_teacher_id(fio_data):
+async def get_teacher_id(fio_data):
     if not fio_data:
         return None
         
@@ -85,7 +85,7 @@ def get_teacher_id(fio_data):
     if not search_param:
         return None
     
-    teachers = get_teachers_from_api(search_param)
+    teachers = await get_teachers_from_api(search_param)
     if not teachers:
         print("Не найдено преподавателей в ответе API")
         return None
