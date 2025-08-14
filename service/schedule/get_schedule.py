@@ -2,6 +2,9 @@ import os
 from service.request.request_data import request
 from dotenv import load_dotenv
 from service.schedule.schedule_processing import process_data_to_text_for_teachers
+import logging
+
+logger = logging.getLogger(__name__)
 
 load_dotenv()
 
@@ -12,4 +15,5 @@ async def get_schedule(id, target_date):
         data = await request(request_url)   
         return process_data_to_text_for_teachers(data, target_date)
     except Exception as e:
-        print(f"Ошибка получения расписания: {str(e)}")
+        logger.exception(f"Ошибка получения расписания: {str(e)}")
+        return "Ошибка при получении расписания"

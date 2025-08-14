@@ -1,6 +1,7 @@
 from schemas.schedule import Schedule
-import os
-import httpx
+import logging
+
+logger = logging.getLogger(__name__)
 
 def process_data_to_text_for_teachers(data, target_date, schedule_type = 'teachers'):
     schedule_list = []
@@ -26,7 +27,7 @@ def process_data_to_text_for_teachers(data, target_date, schedule_type = 'teache
     else:
         return "На эту дату занятий не найдено"
     
-def process_data_to_text_for_cabinets(data, schedule_type = 'cabinet'): #, target_date):
+def process_data_to_text_for_cabinets(data, schedule_type = 'cabinet'):
     schedule_list = []
     schedule = Schedule.model_validate(data)
     for i in schedule.data:

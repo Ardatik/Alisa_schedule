@@ -10,9 +10,9 @@ from service.schedule.get_schedule import get_schedule
 import logging
 
 logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 app = FastAPI()
 
-@app.post('/webhook')
 @app.post('/webhook')
 async def handler(request_data: AliceRequest):
     try:
@@ -75,7 +75,7 @@ async def handler(request_data: AliceRequest):
         return response
     
     except Exception as e:
-        print(f"Произошла ошибка: {str(e)}")
+        logger.exception(f"Произошла ошибка: {str(e)}")
         return {
             "version": request_data.version,
             "session": request_data.session,

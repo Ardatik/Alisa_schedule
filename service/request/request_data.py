@@ -1,4 +1,7 @@
 import httpx
+import logging
+
+logger = logging.getLogger(__name__)
 
 async def request(api_url):
     async with httpx.AsyncClient() as client:
@@ -8,6 +11,11 @@ async def request(api_url):
             data = request.json()
             return data
         except httpx.HTTPStatusError as exc:
-            return f"Ошибка при получении расписания: {exc.response.status_code}"
+            logger.error(f"HTTP error: {exc.response.status_code} for URL {api_url}")
+            return {"error": f"HTTP error: {exc.response.status_code}"}
+        except httpx.RequestError as exc:
+            logger.error(f"Request failed: {exc} for URL {api_url}")
+            return {"error": "Ошибка соединения"}
         except Exception as e:
-            return f"Произошла ошибка: {str(e)}"
+            logger.error(f"Unexpected error: {e} for URL {api_url}")
+            return {"error": "Неожиданная ошибка"}
