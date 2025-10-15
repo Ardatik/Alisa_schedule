@@ -21,7 +21,13 @@ class Request(BaseModel):
     markup: Markup
     type: str
 
+class State(BaseModel):
+    session: Dict[str, Any]
+    user: Dict[str, Any]
+    application: Dict[str, Any]
+
 class AliceRequest(BaseModel):
     session: Dict
     request: Request
+    state: State
     version: str

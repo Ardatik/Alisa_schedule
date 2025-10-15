@@ -13,78 +13,45 @@ logging.basicConfig(level=logging.INFO)
 app = FastAPI()
 
 @app.post('/webhook')
-@app.post('/webhook')
 async def handler(request_data: AliceRequest):
     try:
         user_input = request_data.request.original_utterance.lower().strip()
-        session = request_data.session
+        #session = request_data.session
         nlu = request_data.request.nlu
+        current_state = request_data.state.session or {}
 
         response = {
-            "version": request_data.version,
-            "session": session,
             "response": {
-                "end_session": False,
-                "text": ""
-            }
+                "text": "Привет, это голосовой помощник, назовите тип нужного для вас расписания: преподаватель, аудитория или группа",
+                "tts": "Привет, это голосовой помощник, назовите тип нужного для вас расписания: преподаватель, аудитория или группа",
+                "end_session": False
+            },
+            "session_state": {},
+            "user_state_update": {},
+            "application_state": {},
+            "version": request_data.version
         }
+        
+        if "преподаватель" in user_input:
+            response["session_state"] = {"current_mode": "teacher"}
+            response["response"]["text"] = "Хорошо, назовите фамилию преподавателя"
+            response["response"]["tts"] = "Хорошо, назовите фамилию преподавателя"
             
-        if not user_input:
-            response['response']['text'] = 'Привет, это голосовой помощник, назовите тип нужного для вас расписания: преподаватель, аудитория или группа'
-        else:
-            print(user_input)
-            response['response']['text'] = 'Назовите имя преподавателя'
-            fio_dict = find_teacher(nlu)
-            print(fio_dict)
-            if not fio_dict:
-                response['response']['text'] = 'Не нашла ФИО в запросе'
-            else:
-                result = await get_teacher_id(fio_dict)
-                print(result)
-                if not result:
-                    response['response']['text'] = 'Не нашла такого преподавателя'
-                elif isinstance(result, list):
-                    if not result:
-                        response['response']['text'] = 'Не нашла такого преподавателя'
-                    else:
-                        choices = "Нашлось несколько преподавателей:\n"
-                        for i, teacher in enumerate(result, 1):
-                            name = teacher.get('full_name', f'Преподаватель {i}')
-                            choices += f"{i}. {name}\n"
-                        choices += "\nУкажите номер нужного преподавателя."
-                        response['response']['text'] = choices
-                    session_state = request.get('state', {}).get('session', {})
-                    if isinstance(result, list):
-                        session_state['teacher_candidates'] = result
-                        session_state['awaiting_teacher_choice'] = True
-                        response['session_state'] = session_state
-                    else:
-                        response['session_state'] = {}
-                    response['session_state'] = result
-                else:
-                    teacher_id = result
-                    target_date = parse_date(nlu)
-                    if not target_date:
-                        response['response']['text'] = 'Некорректная дата в запросе'
-                    else:
-                        schedule_text = await get_schedule(teacher_id, target_date)
-                        if not schedule_text:
-                            response['response']['text'] = 'Расписание не найдено.'
-                        else:
-                            response['response']['text'] = schedule_text
         return response
-    
+        
     except Exception as e:
         print(f"Произошла ошибка: {str(e)}")
         return {
-            "version": request_data.version,
-            "session": request_data.session,
             "response": {
-                "end_session": True,
-                "text": "Произошла ошибка"
-            }
+                "text": "Произошла ошибка. Попробуйте еще раз.",
+                "tts": "Произошла ошибка. Попробуйте еще раз.",
+                "end_session": False
+            },
+            "session_state": {},
+            "user_state_update": {},
+            "application_state": {},
+            "version": "1.0"  # Обязательно строка "1.0"
         }
 
 if __name__ == "__main__":
     uvicorn.run(app, host="0.0.0.0", port=8000)
-    
