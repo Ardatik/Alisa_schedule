@@ -36,6 +36,7 @@ def parse_date(nlu: Nlu):
     entities = nlu.entities
     today = datetime.now(tz=ZoneInfo("Europe/Moscow")).date()
     tokens = nlu.tokens
+    
     for entity in entities:
         print('\n','entity: ',entity)
         if entity.type == 'YANDEX.DATETIME':
@@ -49,16 +50,24 @@ def parse_date(nlu: Nlu):
             print('\n','day: ','\t',day,)
             print('\n','month: ','\t',month)
             print('\n','year: ','\t',year)
+            
+            schedule_date = None
+            
             if value.get('day_is_relative') == False and value.get('month_is_relative') == False:
                 try:
                     schedule_date = date(year, month, day)
                 except (ValueError, TypeError):
                     return None
-            if value.get('day_is_relative') == True and value.get('month_is_relative') == False:
-                schedule_date = today + relativedelta(days = value.get("day"))
-            if value.get('day_is_relative') == True and value.get('month_is_relative') == True:
-                schedule_date = today + relativedelta(months = month,days = day)
-            return schedule_date
+            elif value.get('day_is_relative') == True and value.get('month_is_relative') == False:
+                schedule_date = today + relativedelta(days=value.get("day", 0))
+            elif value.get('day_is_relative') == True and value.get('month_is_relative') == True:
+                schedule_date = today + relativedelta(months=month, days=day)
+            else:
+                schedule_date = today
+            
+            if schedule_date:
+                return schedule_date
+    
     for token in tokens:
         weekday = normalize_day_name(token)
         weekday_iso = None
@@ -71,7 +80,5 @@ def parse_date(nlu: Nlu):
             if days_ahead < 0:
                 days_ahead += 7  
             return today + timedelta(days=days_ahead)
+    
     return None
-                
-            
-            
