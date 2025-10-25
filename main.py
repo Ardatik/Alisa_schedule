@@ -7,6 +7,7 @@ from service.teachers.find_teacher_by_name import find_teacher
 from service.teachers.find_teacher_by_id import get_teacher_id
 from service.request.request_data import request
 from service.schedule.get_schedule import get_schedule 
+from service.cabinets.find_cabinet import find_auditory, get_cabinet_id
 import logging
 
 logging.basicConfig(level=logging.INFO)
@@ -30,10 +31,11 @@ async def handler(request_data: AliceRequest):
             "session_state": current_state
         }
 
-        if not user_input or session["new"] == "true" or not current_state.get('current_step'):
+        if not user_input or session.get("new") or not current_state.get('current_step'):
             response['response']['text'] = 'Привет, это голосовой помощник, назовите тип нужного для вас расписания: преподаватель, аудитория или группа'
             response['session_state'] = {'current_step': 'start'}
-        
+            return response
+
         elif current_state.get('current_step') == 'start':
             if "преподаватель" in user_input:
                 response['response']['text'] = 'Назовите имя преподавателя'
@@ -46,18 +48,14 @@ async def handler(request_data: AliceRequest):
                 response['session_state'] = {'current_step': 'waiting_group_number'}
             else:
                 response['response']['text'] = 'Пожалуйста, выберите тип расписания: преподаватель, аудитория или группа'
-        
+            return response
+
         elif current_state.get('current_step') == 'waiting_teacher_name':
-            print(f"Пользователь ввел: {user_input}")
-            fio_dict = find_teacher(nlu)
-            print(f"Извлеченные данные преподавателя: {fio_dict}")
-            
+            fio_dict = find_teacher(nlu)            
             if not fio_dict or not any([fio_dict.get('last_name'), fio_dict.get('first_name'), fio_dict.get('full_name')]):
                 response['response']['text'] = 'Не нашла ФИО в запросе. Пожалуйста, назовите имя преподавателя еще раз.'
             else:
-                result = await get_teacher_id(fio_dict)
-                print(f"Результат поиска преподавателя: {result} (тип: {type(result)})")
-                
+                result = await get_teacher_id(fio_dict)                
                 if not result:
                     response['response']['text'] = 'Не нашла такого преподавателя. Пожалуйста, уточните фамилию.'
                 elif isinstance(result, list):
@@ -70,21 +68,53 @@ async def handler(request_data: AliceRequest):
                             choices += f"{i}. {name}\n"
                         choices += "\nУкажите номер нужного преподавателя."
                         response['response']['text'] = choices
-                        
                         response['session_state'] = {
-                            **current_state,
-                            'teacher_candidates': result,
-                            'current_step': 'waiting_teacher_choice'
+                            'current_step': 'waiting_teacher_choice',
+                            'teacher_candidates': result
                         }
                 else:
                     response['session_state'] = {
-                        **current_state,
                         'current_step': 'waiting_date',
-                        'teacher_id': result,
-                        'teacher_info': fio_dict
+                        'entity_type': 'teacher',
+                        'entity_id': result,
+                        'entity_info': fio_dict
                     }
-                    response['response']['text'] = f'На какой день нужно расписание?'
-        
+                    teacher_name = fio_dict.get('full_name', 'преподавателя')
+                    response['response']['text'] = f'На какой день нужно расписание для {teacher_name}?'
+            return response
+
+        elif current_state.get('current_step') == 'waiting_room_number':
+            auditory_dict = find_auditory(nlu)            
+            if not auditory_dict or not auditory_dict.get('number'):
+                response['response']['text'] = 'Не нашла номер аудитории в запросе. Пожалуйста, назовите номер аудитории еще раз.'
+            else:
+                result = await get_cabinet_id(auditory_dict)                
+                if not result:
+                    response['response']['text'] = f'Не нашла аудиторию {auditory_dict["number"]}. Пожалуйста, уточните номер.'
+                elif isinstance(result, list):
+                    if not result:
+                        response['response']['text'] = f'Не нашла аудиторию {auditory_dict["number"]}'
+                    else:
+                        choices = "Нашлось несколько аудиторий:\n"
+                        for i, cabinet in enumerate(result, 1):
+                            name = cabinet.get('name', f'Аудитория {i}')
+                            choices += f"{i}. {name}\n"
+                        choices += "\nУкажите номер нужной аудитории."
+                        response['response']['text'] = choices
+                        response['session_state'] = {
+                            'current_step': 'waiting_cabinet_choice',
+                            'cabinet_candidates': result
+                        }
+                else:
+                    response['session_state'] = {
+                        'current_step': 'waiting_date',
+                        'entity_type': 'cabinet',
+                        'entity_id': result,
+                        'entity_info': auditory_dict
+                    }
+                    response['response']['text'] = f'На какой день нужно расписание для аудитории {auditory_dict["number"]}?'
+            return response
+
         elif current_state.get('current_step') == 'waiting_teacher_choice':
             if user_input.isdigit():
                 index = int(user_input) - 1
@@ -93,48 +123,76 @@ async def handler(request_data: AliceRequest):
                 if 0 <= index < len(teacher_candidates):
                     selected_teacher = teacher_candidates[index]
                     teacher_id = selected_teacher.get('id')
-                    
-                    print(f"Выбран преподаватель: {selected_teacher.get('full_name')} с ID: {teacher_id}")
-                    
                     response['session_state'] = {
-                        **current_state,
                         'current_step': 'waiting_date',
-                        'teacher_id': teacher_id,
-                        'teacher_info': selected_teacher
+                        'entity_type': 'teacher',
+                        'entity_id': teacher_id,
+                        'entity_info': selected_teacher
                     }
                     response['response']['text'] = f'Выбран преподаватель: {selected_teacher.get("full_name", "")}. На какой день нужно расписание?'
                 else:
                     response['response']['text'] = 'Неверный номер. Пожалуйста, выберите номер из списка.'
             else:
                 response['response']['text'] = 'Пожалуйста, укажите номер преподавателя из списка.'
-        
+            return response
+
+        elif current_state.get('current_step') == 'waiting_cabinet_choice':
+            if user_input.isdigit():
+                index = int(user_input) - 1
+                cabinet_candidates = current_state.get('cabinet_candidates', [])
+                
+                if 0 <= index < len(cabinet_candidates):
+                    selected_cabinet = cabinet_candidates[index]
+                    cabinet_id = selected_cabinet.get('id')
+                    print(f"Выбрана аудитория: {selected_cabinet.get('name')} с ID: {cabinet_id}")
+                    response['session_state'] = {
+                        'current_step': 'waiting_date',
+                        'entity_type': 'cabinet',
+                        'entity_id': cabinet_id,
+                        'entity_info': selected_cabinet
+                    }
+                    response['response']['text'] = f'Выбрана аудитория: {selected_cabinet.get("name", "")}. На какой день нужно расписание?'
+                else:
+                    response['response']['text'] = 'Неверный номер. Пожалуйста, выберите номер из списка.'
+            else:
+                response['response']['text'] = 'Пожалуйста, укажите номер аудитории из списка.'
+            return response
+
         elif current_state.get('current_step') == 'waiting_date':
             try:
-                teacher_id = current_state.get('teacher_id')
-                teacher_info = current_state.get('teacher_info', {})
-                
-                print(f"Текущий teacher_id: {teacher_id}")
-                print(f"Информация о преподавателе: {teacher_info}")
-                
-                if not teacher_id:
-                    response['response']['text'] = 'Ошибка: не найден ID преподавателя. Давайте начнем сначала.'
+                entity_type = current_state.get('entity_type')
+                entity_id = current_state.get('entity_id')
+                entity_info = current_state.get('entity_info', {})                
+                if not entity_id:
+                    response['response']['text'] = f'Ошибка: не найден ID {entity_type}. Давайте начнем сначала.'
                     response['session_state'] = {'current_step': 'start'}
+                    return response
+                
+                target_date = parse_date(nlu)
+                if not target_date:
+                    response['response']['text'] = 'Не поняла дату. Пожалуйста, укажите дату, например: "на завтра", "на понедельник" или конкретную дату.'
+                    return response                
+                if entity_type == 'teacher':
+                    schedule_type = 'teachers'
                 else:
-                    target_date = parse_date(nlu)
-            
-                    if not target_date:
-                        response['response']['text'] = 'Не поняла дату. Пожалуйста, укажите дату, например: "на завтра", "на понедельник" или конкретную дату.'
-                    else:
-                        print(f"Запрашиваем расписание для teacher_id: {teacher_id} на дату: {target_date}")
-                        schedule_text = await get_schedule(teacher_id, target_date)
-                        if not schedule_text:
-                            response['response']['text'] = 'Расписание не найдено.'
-                        else:
-                            response['response']['text'] = schedule_text
-                            response['session_state'] = {'current_step': 'start'}
+                    schedule_type = 'cabinet'
+                schedule_text = await get_schedule(entity_id, target_date, schedule_type)
+                
+                if not schedule_text or schedule_text.startswith('Ошибка'):
+                    response['response']['text'] = 'Расписание не найдено или произошла ошибка.'
+                else:
+                    response['response']['text'] = schedule_text
+                
+                response['session_state'] = {'current_step': 'start'}
+                
             except Exception as e:
-                print(f"Ошибка при обработке даты: {str(e)}")
-                response['response']['text'] = 'Произошла ошибка при обработке даты. Попробуйте еще раз.'
+                response['response']['text'] = 'Произошла ошибка при обработке запроса. Попробуйте еще раз.'
+            return response
+
+        elif current_state.get('current_step') == 'waiting_group_number':
+            response['response']['text'] = 'Функционал для групп пока не реализован. Выберите преподавателя или аудиторию.'
+            response['session_state'] = {'current_step': 'start'}
+            return response
 
         return response
         
