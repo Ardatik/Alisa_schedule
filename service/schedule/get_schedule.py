@@ -23,6 +23,7 @@ async def get_schedule(id, target_date, schedule_type="teachers"):
         end_date_str = end_of_next_week.strftime("%Y-%m-%d")
         env_var_teach = os.getenv("GET_SCHEDULE_FOR_TEACHER")
         env_var_cab = os.getenv("GET_SCHEDULE_FOR_CABINETS")
+        env_var_group = os.getenv("GET_SCHEDULE_FOR_GROUPS")
         if not id:
             raise ValueError("ID is required")
         if schedule_type == "teachers":
@@ -30,7 +31,7 @@ async def get_schedule(id, target_date, schedule_type="teachers"):
         elif schedule_type == "cabinet":
             request_url = f"{env_var_cab}?start_date={start_date_str}&end_date={end_date_str}&place={id}"
         elif schedule_type == "group":
-            request_url = f"{env_var_cab}?end_date={end_date_str}&group={id}&start_date={start_date_str}"
+            request_url = f"{env_var_group}?end_date={end_date_str}&group={id}&start_date={start_date_str}"
         else:
             raise ValueError(f"Unknown schedule type: {schedule_type}")
         print(f"url: {request_url}")
