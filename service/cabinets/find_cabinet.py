@@ -63,7 +63,7 @@ async def get_cabinets_from_api(search_param):
         request_url = env_var + search_param
         data = await request(request_url)
         return (
-            data.get("places", []) or data.get("cabinets", []) or data.get("data", [])
+            data.get("places", [])
         )
     except Exception as e:
         print(f"Ошибка при запросе данных аудиторий: {e}")
