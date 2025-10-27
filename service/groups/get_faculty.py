@@ -8,13 +8,14 @@ async def get_faculties_from_api():
     try:
         load_dotenv()
         request_url = os.getenv("GET_FACULTIES")
-        print(request_url)
+        print(f"[DEBUG] Запрос факультетов: {request_url}")
         data = await request(request_url)
         faculties_data = FacultyList.model_validate({"faculties": data}).faculties
         faculties_dict = {}
         for faculty in faculties_data:
             if faculty.id and faculty.short_name and not faculty.inactive:
                 faculties_dict[faculty.short_name] = faculty.id
+                print(f"[DEBUG] Факультет: {faculty.short_name} (ID: {faculty.id})")
         return faculties_dict
     except Exception as e:
         print(f"Ошибка при запросе данных факультетов: {e}")
@@ -31,6 +32,7 @@ async def find_faculty_by_choice(choice_number):
         choice_index = int(choice_number) - 1
         if 0 <= choice_index < len(faculties_list):
             short_name, faculty_id = faculties_list[choice_index]
+            print(f"[DEBUG] Выбран факультет: {short_name} (ID: {faculty_id})")
             return {
                 "id": faculty_id,
                 "short_name": short_name
@@ -46,9 +48,9 @@ async def display_faculties():
     faculties_dict = await get_faculties_from_api()
     if not faculties_dict:
         return "Не удалось загрузить список факультетов"
-    sorted_faculties = sorted(faculties_dict.items(), key=lambda x: x[0])
+    faculties = faculties_dict.items()
     result = "Доступные факультеты:\n"
-    for i, (short_name, faculty_id) in enumerate(sorted_faculties, 1):
+    for i, (short_name, faculty_id) in enumerate(faculties, 1):
         result += f"{i}. {short_name}\n"
     result += "\nВыберите номер факультета:"
     return result

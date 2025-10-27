@@ -1,6 +1,7 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from typing import List, Optional
 from datetime import date
+
 
 class Type(BaseModel):
     id: int
@@ -9,43 +10,47 @@ class Type(BaseModel):
     color: str
     all_day: bool
 
+
 class Discipline(BaseModel):
-    id: int
-    name: str
-    short_name: str
+    id: Optional[int] = None
+    name: Optional[str] = None
+    short_name: Optional[str] = None
+
+
+class Place(BaseModel):
+    id: Optional[int] = None
+    name: Optional[str] = None
+    size: Optional[int] = None
+
 
 class Group(BaseModel):
     id: int
     name: str
-    size: int
+    size: Optional[int] = None
+
 
 class Teacher(BaseModel):
     id: int
     short_name: str
     full_name: str
 
-class Place(BaseModel):
-    id: int
-    name: str
-    size: Optional[int] = None
 
-class Data(BaseModel):
+class Lesson(BaseModel):
     id: int
     number: int
-    start_time: str
-    end_time: str
+    start_time: Optional[str] = None
+    end_time: Optional[str] = None
     is_remotely: bool
     is_elective: bool
     type: Type
-    discipline: Discipline
+    discipline: Optional[Discipline] = None
     place: Optional[Place] = None
-    date: str
+    date: date
     theme: Optional[str] = None
-    status: int 
+    status: int
     groups: List[Group]
     teachers: List[Teacher]
 
+
 class Schedule(BaseModel):
-    data: List[Data]
-    metadata: dict 
-    status: str
+    data: List[Lesson]
